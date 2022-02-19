@@ -1,85 +1,66 @@
+
 let socket = io().connect();
 
 
-socket.on('products', (data) => {
-  console.log(data)
-  render(data);
-})
-
 socket.on('messages', (data) => {
-    console.log(data)
     chat(data);
 })
 
-function render(data){
-    let html = data.map((elem, index) =>{
-
-        return(` 
-        <table class="table" >
-        <thead style="color:white; width: 100%; ">
-            <tr>
-                <th>Productos</th>
-                <th>Precios</th>
-                <th>Image</th>
-            </tr>
-        </thead>
-        <tbody style="color:white;">
-            <tr>
-                <td>${elem.title}</td>
-    
-                <td>${elem.price}</td>
-    
-                <td>
-                    <img style="width: 10%;" class="thumbnailCon" src="${elem.thumbnail}" alt="">
-                </td>
-            </tr>
-        </tbody>
-    </table>
-        
-        `)
-    }).join(" ");
-    document.getElementById('contenedorTable').innerHTML = html;
-}
-
-function addProduct(e){
-    let product = {
-        title: document.getElementById('title').value,
-        price: document.getElementById('price').value,
-        thumbnail: document.getElementById('thumbnail').value
-    }
-    socket.emit('new-products', product);
-
-    document.getElementById('title').value = '';
-    document.getElementById('price').value = '';
-    document.getElementById('thumbnail').value = '';
-
-    return false;
-}
 
 function chat(data){
-    let chat = data.map((elem,index) =>{
-        return(
-            `<div>
-                <p style="font-style:italic; color: green;">
-                    <strong style="font-style: normal; color:blue;">${elem.email}</strong>
-                    <span style="font-style: normal; color:brown;">${elem.timestamp}</span>
-                    ${elem.messanges}
-                </p>
-            </div>`
-        )
-    }).join(" ");
+    const author = new normalizr.schema.Entity('author', {}, { idAttribute: 'email' });
+    const text = new normalizr.schema.Entity('text', { author: author },{ idAttribute: 'id' });
+    const messagesCenter = new normalizr.schema.Entity('messagesCenter', {
 
-    document.getElementById('allChat').innerHTML = chat;
+      authors: [author],
+      messages: [text]
+    }, { idAttribute: 'id' });
+
+ 
+    const denormalizeData= [normalizr.denormalize(data[0].result, messagesCenter, data[0].entities)];
+
+    const longO = JSON.stringify(denormalizeData).length;
+    console.log("longitud Original es de:"+ longO)
+    const longNor = JSON.stringify(data).length;
+    console.log("longitud normalizado es de:"+ longNor)
+    const porcentaje = (longNor * 100) / longO;
+    console.log("porcentaje de compresión es de:"+ porcentaje.toFixed(2) + "%")
+
+    document.getElementById('porcentaje').innerHTML = `Centro de Mensaje. (Compresión: ${porcentaje}%`;
+
+    let authorsDesnorm = denormalizeData[0].author;
+    let textDesnorm = denormalizeData[0].text;
+    console.log(textDesnorm)
+
+    const authorsMap = authorsDesnorm.map((elem, index) => {
+        return (`<div>
+        <p style="font-style:italic; color: green;">
+            <strong style="font-style: normal; color:blue;">${elem.alias}</strong>
+            <span style="font-style: normal; color:brown;">${elem.email}</span>
+            ${textDesnorm[index]}
+            <img width="50" src="${elem.avatar}"/>
+        </p>
+    </div>`)
+    }).join("")
+    document.getElementById('allChat').innerHTML = authorsMap;
 
 }
 
 function addMessage(e){
     let chatFormat = {
-        email: document.getElementById('mail').value,
-        timestamp: new Date().toLocaleString(),
-        messanges: document.getElementById('mensaje').value
-    }
+        id:"mensajes",
+        author:{
+            email:document.getElementById('email').value,
+            nombre:document.getElementById('name').value,
+            apellido:document.getElementById('surname').value,
+            edad:document.getElementById('age').value,
+            alias:document.getElementById('nick').value,
+            avatar:document.getElementById('avatar').value
+        },
 
+        text: document.getElementById('mensaje').value     
+
+    }
     socket.emit('new-messages', chatFormat)
     document.getElementById('mensaje').value = '';
     document.getElementById('enviar').focus();

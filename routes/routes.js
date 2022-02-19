@@ -1,17 +1,19 @@
 const {Router} = require('express');
+const prodGen = require('../controllers/prodGen.js')
+const chatCt = require('../controllers/chatController.js')
 
 
-const routerApp = Router();
+const appRoute = Router();
+const chatRoute = Router();
 
-//const productosApi = require('../controllers/products')
+chatRoute.get('/', (req,res) => {
 
-routerApp.get('/', (req,res) => {   
-
-    res.sendFile('../layout/index.html',{root:__dirname})
-
+    res.render('./layouts/index.pug')
 })
 
+appRoute.get('/', (req, res) => {
+    let products = prodGen();
+    res.render('./layouts/productos.pug',{products})
+})
 
-
-
-module.exports = routerApp;
+module.exports = {appRoute,chatRoute};
